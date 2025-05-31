@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The US Software Engineer Job Market: An Interactive Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Visualization & Content Choices: 
+        - Layoff/Job Listing Data -> Goal: Show recent trends -> Viz: Bar/Line charts (Chart.js) -> Interaction: Hover for tooltips -> Justification: Clearly visualizes the sharp rise and fall, making the data immediately impactful.
+        - BLS Projections -> Goal: Contrast short-term pain with long-term optimism -> Viz: Large stat cards & simple bar chart (HTML/CSS & Chart.js) -> Interaction: Static display for clarity -> Justification: High-impact numbers provide a quick, optimistic counterpoint.
+        - Drivers of Change -> Goal: Explain the causal factors -> Viz: Tabbed content sections (HTML/JS) -> Interaction: Click tabs to reveal detailed text -> Justification: Organizes complex, multi-faceted information cleanly, preventing cognitive overload.
+        - Skill Shifts -> Goal: Detail the specific skills gaining/losing value -> Viz: Two-column dynamic lists (HTML/JS) -> Interaction: Click to view details -> Justification: Direct comparison format is highly effective for showing the market pivot.
+        - Experience Level Impact -> Goal: Show the "hourglass" market effect -> Viz: Custom 'hourglass' diagram (HTML/CSS) -> Interaction: Click sections to update content -> Justification: A strong visual metaphor that simplifies a complex dynamic, making it memorable and easy to grasp.
+        - CONFIRMING NO SVG/Mermaid. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 350px; max-height: 40vh; }
+        .nav-link { transition: all 0.3s; }
+        .nav-link:hover, .nav-link.active { color: #4f46e5; border-color: #4f46e5; }
+        /* Dark mode styles for active nav link */
+        .dark .nav-link.active { color: #818cf8; border-color: #818cf8; }
+        .tab-button.active { background-color: #4f46e5; color: #ffffff; }
+        /* Dark mode styles for active tab button */
+        .dark .tab-button.active { background-color: #6366f1; color: #ffffff; }
+        .skill-card.active { border-color: #4f46e5; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .hourglass-segment { transition: all 0.3s ease-in-out; cursor: pointer; }
+        .hourglass-segment:hover, .hourglass-segment.active { background-color: #6366f1; color: white; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm dark:bg-gray-800/80">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">SWE Job Market</h1>
+                </div>
+                <div class="flex items-center">
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#overview" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 border-b-2 border-transparent dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:border-indigo-400">Overview</a>
+                            <a href="#drivers" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 border-b-2 border-transparent dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:border-indigo-400">Drivers of Change</a>
+                            <a href="#impact" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 border-b-2 border-transparent dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:border-indigo-400">Career Impact</a>
+                            <a href="#skills" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 border-b-2 border-transparent dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:border-indigo-400">Skill Shifts</a>
+                            <a href="#takeaways" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 border-b-2 border-transparent dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:border-indigo-400">Takeaways</a>
+                        </div>
+                    </div>
+                    <button id="darkModeToggle" class="ml-4 p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="w-6 h-6 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h1M4 12H3m15.325 6.757l-.707-.707M6.707 6.707l-.707-.707m12.728 0l-.707.707M6.707 17.293l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <svg class="w-6 h-6 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9 9 0 008.354-5.646z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <section class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-gray-100 mb-4 tracking-tight">The Great Recalibration</h1>
+            <p class="max-w-3xl mx-auto text-lg text-gray-600 dark:text-gray-300">The US software engineering job market is undergoing a profound structural shift. A wave of layoffs driven by economic pressures and AI-powered efficiency is creating a more competitive landscape, fundamentally redefining roles, required skills, and career trajectories.</p>
+        </section>
+
+        <section id="overview" class="mb-20 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">The Big Picture: A Market of Contradictions</h2>
+            <p class="text-center text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">While recent layoffs paint a grim picture, long-term projections remain remarkably strong. This section visualizes the tension between the immediate downturn and the sustained future demand for software engineers.</p>
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="bg-white p-6 rounded-xl shadow-md dark:bg-gray-800 dark:shadow-lg">
+                    <h3 class="font-semibold text-lg mb-4 text-center text-gray-900 dark:text-gray-100">US Tech Layoffs by Year (2022-2025)</h3>
+                    <div class="chart-container h-[300px] md:h-[350px]">
+                        <canvas id="layoffsChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md dark:bg-gray-800 dark:shadow-lg">
+                    <h3 class="font-semibold text-lg mb-4 text-center text-gray-900 dark:text-gray-100">US Software Dev Job Listings (% Change from Feb 2020)</h3>
+                    <div class="chart-container h-[300px] md:h-[350px]">
+                        <canvas id="jobListingsChart"></canvas>
+                    </div>
+                </div>
+                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6 text-center mt-8">
+                    <div class="bg-indigo-50 p-6 rounded-xl dark:bg-indigo-900/30">
+                         <p class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">17.9%</p>
+                         <p class="text-gray-700 mt-2 dark:text-gray-300">Projected Job Growth for Software Developers (2023-2033)</p>
+                    </div>
+                    <div class="bg-indigo-50 p-6 rounded-xl dark:bg-indigo-900/30">
+                        <p class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">~153,900</p>
+                        <p class="text-gray-700 mt-2 dark:text-gray-300">Average New Job Openings Per Year Over the Decade</p>
+                    </div>
+                    <div class="bg-indigo-50 p-6 rounded-xl dark:bg-indigo-900/30">
+                        <p class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">2 Million</p>
+                        <p class="text-gray-700 mt-2 dark:text-gray-300">Projected Total SWE Jobs by 2033 (up from 1.7M)</p>
+                   </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="drivers" class="mb-20 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">The Four Forces Reshaping the Industry</h2>
+            <p class="text-center text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">Four key drivers are converging to create the current market: a post-pandemic economic correction, the transformative rise of AI, increasing globalization, and heightened domestic competition. Explore each factor to understand the 'why' behind the shift.</p>
+            <div class="bg-white rounded-xl shadow-md p-2 dark:bg-gray-800 dark:shadow-lg">
+                <div class="flex justify-center border-b border-gray-200 dark:border-gray-700">
+                    <button data-tab="ai" class="tab-button flex-1 sm:flex-none text-sm md:text-base px-4 py-3 font-semibold text-gray-500 hover:bg-gray-100 active dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100">🤖 The AI Revolution</button>
+                    <button data-tab="economy" class="tab-button flex-1 sm:flex-none text-sm md:text-base px-4 py-3 font-semibold text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100">📉 Economic Recalibration</button>
+                    <button data-tab="global" class="tab-button flex-1 sm:flex-none text-sm md:text-base px-4 py-3 font-semibold text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100">🌍 Globalization & Competition</button>
+                </div>
+                <div id="driversContent" class="p-6 md:p-8 min-h-[300px] text-gray-600 dark:text-gray-300">
+                </div>
+            </div>
+        </section>
+        
+        <section id="impact" class="mb-20 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">The "Hourglass" Effect on Careers</h2>
+            <p class="text-center text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">AI and market pressures are reshaping demand, creating an "hourglass" structure. Demand is high for strategic senior talent and a new breed of AI-literate entry-level engineers, while mid-career roles are being squeezed. Click each segment to see the specific impact.</p>
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+                <div class="flex justify-center items-center">
+                    <div class="w-64 font-semibold text-center">
+                        <div data-level="senior" class="hourglass-segment bg-gray-200 p-8 rounded-t-xl dark:bg-gray-700 dark:text-gray-100">
+                            Senior Engineers (7+ years)
+                            <div class="text-sm font-normal">High Demand</div>
+                        </div>
+                        <div class="bg-indigo-500 text-white p-4 dark:bg-indigo-700">
+                            Mid-Career Squeeze
+                        </div>
+                        <div data-level="entry" class="hourglass-segment bg-gray-200 p-8 rounded-b-xl dark:bg-gray-700 dark:text-gray-100">
+                            Entry-Level Engineers (0-3 years)
+                            <div class="text-sm font-normal">Bifurcated Demand</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="impactContent" class="bg-white rounded-xl shadow-md p-6 md:p-8 min-h-[300px] dark:bg-gray-800 dark:shadow-lg text-gray-600 dark:text-gray-300">
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="mb-20 scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">The Evolving Skillset</h2>
+             <p class="text-center text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">The market is sending clear signals about which skills are most valuable. Proficiency in AI, data, and cloud is soaring, while routine coding and niche languages are declining. Adaptability and strong soft skills are becoming non-negotiable differentiators.</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold text-green-600 dark:text-green-400 mb-4 text-center">📈 In-Demand Skills</h3>
+                    <div class="space-y-3">
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                            <h4 class="font-semibold">AI & Machine Learning</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">From prompt engineering to model integration (TensorFlow, PyTorch).</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                            <h4 class="font-semibold">Cloud Computing & DevOps</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">AWS, Azure, GCP, Docker, Kubernetes, CI/CD.</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                             <h4 class="font-semibold">Data Engineering & Analytics</h4>
+                             <p class="text-sm text-gray-600 dark:text-gray-300">Python, SQL, Spark, MongoDB for managing large datasets.</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                             <h4 class="font-semibold">Cybersecurity</h4>
+                             <p class="text-sm text-gray-600 dark:text-gray-300">Awareness of security principles and threat detection.</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                             <h4 class="font-semibold">Critical Soft Skills</h4>
+                             <p class="text-sm text-gray-600 dark:text-gray-300">Problem-solving, communication, adaptability, teamwork.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-red-600 dark:text-red-400 mb-4 text-center">📉 Declining Skills</h3>
+                    <div class="space-y-3">
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                            <h4 class="font-semibold">Traditional Frontend Development</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">Market shifting toward full-stack or specialized backend roles.</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                            <h4 class="font-semibold">Niche or Legacy Languages</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">Ruby (-59%), PL/SQL (-34%) are seeing reduced demand.</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                             <h4 class="font-semibold">Legacy Big Data Frameworks</h4>
+                             <p class="text-sm text-gray-600 dark:text-gray-300">Hadoop (-33%) being replaced by modern cloud-native solutions.</p>
+                        </div>
+                        <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                             <h4 class="font-semibold">Platform-Specific Mobile</h4>
+                             <p class="text-sm text-gray-600 dark:text-gray-300">Android-native (-63%) roles declining as cross-platform tools rise.</p>
+                        </div>
+                         <div class="skill-card bg-white p-4 rounded-lg border-2 border-transparent cursor-pointer dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100">
+                             <h4 class="font-semibold">Routine Coding Tasks</h4>
+                             <p class="text-sm text-gray-600 dark:text-gray-300">Boilerplate and simple scripting are increasingly automated by AI.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="takeaways" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">Strategic Takeaways</h2>
+            <p class="text-center text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">The market transformation demands a strategic response. Here are key recommendations for software engineers and organizations to navigate the new landscape successfully.</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md dark:bg-gray-800 dark:shadow-lg">
+                    <h3 class="font-semibold text-lg mb-4 text-indigo-600 dark:text-indigo-400">For Software Engineers</h3>
+                    <ul class="space-y-3 list-disc list-inside text-gray-700 dark:text-gray-300">
+                        <li><strong>Adopt an "AI-First" Mindset:</strong> View AI tools as collaborators, not competitors. Master prompt engineering and AI-augmented workflows.</li>
+                        <li><strong>Specialize and Upskill:</strong> Focus on high-demand areas like cloud, data engineering, and security. Move beyond traditional frontend/backend roles.</li>
+                        <li><strong>Cultivate Soft Skills:</strong> Your ability to communicate, solve complex problems, and collaborate is your greatest defense against automation.</li>
+                        <li><strong>Build a Portfolio:</strong> Demonstrate tangible impact through personal projects, especially in emerging, AI-literate roles.</li>
+                        <li><strong>Diversify Industry Focus:</strong> Look for opportunities beyond pure tech in sectors like finance, healthcare, and industrial automation where demand is growing.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md dark:bg-gray-800 dark:shadow-lg">
+                    <h3 class="font-semibold text-lg mb-4 text-indigo-600 dark:text-indigo-400">For Organizations</h3>
+                    <ul class="space-y-3 list-disc list-inside text-gray-700 dark:text-gray-300">
+                        <li><strong>Invest in Upskilling:</strong> Retrain your existing workforce with AI-related skills to boost productivity and retain institutional knowledge.</li>
+                        <li><strong>Maintain an Entry-Level Pipeline:</strong> Over-reliance on AI for junior tasks risks a future shortage of mid-level and senior talent. Keep the on-ramp open.</li>
+                        <li><strong>Rethink Compensation:</strong> Shift from lavish perks to meaningful incentives like clear career growth, fair pay, and strategic flexibility.</li>
+                        <li><strong>Strengthen QA Processes:</strong> AI-generated code requires robust human oversight, manual reviews, and automated testing to manage risks.</li>
+                         <li><strong>Embrace Strategic Workforce Planning:</strong> Balance domestic talent, global outsourcing, and hybrid work models to build a resilient, cost-effective engineering team.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-16 dark:bg-gray-950">
+        <div class="container mx-auto py-6 px-4 text-center text-sm text-gray-400 dark:text-gray-500">
+            <p>Interactive analysis based on the report "The Evolving Landscape of US Software Engineering Jobs Amidst Tech Layoffs and AI Transformation."</p>
+            <p>&copy; 2025 Interactive Analytics. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const darkModeToggle = document.getElementById('darkModeToggle');
+
+            console.log('DOMContentLoaded fired.');
+            console.log('htmlEl element:', htmlEl);
+            console.log('darkModeToggle element:', darkModeToggle);
+
+            const enableDarkMode = () => {
+                htmlEl.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                console.log('Dark mode enabled.');
+            };
+
+            const disableDarkMode = () => {
+                htmlEl.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                console.log('Dark mode disabled.');
+            };
+
+            // Check for saved preference or system preference
+            if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                enableDarkMode();
+            } else {
+                disableDarkMode();
+            }
+
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', () => {
+                    console.log('Dark mode toggle button clicked!');
+                    if (htmlEl.classList.contains('dark')) {
+                        disableDarkMode();
+                    } else {
+                        enableDarkMode();
+                    }
+                    // Re-render charts to apply new colors
+                    updateChartsForTheme();
+                });
+            } else {
+                console.error('Error: Dark mode toggle button not found. Please ensure the element with ID "darkModeToggle" exists in the HTML.');
+            }
+
+            const createChart = (ctx, type, data, options) => new Chart(ctx, { type, data, options });
+
+            const layoffData = {
+                labels: ['2022', '2023', '2024', '2025 (YTD)'],
+                datasets: [{
+                    label: 'Workers Laid Off',
+                    data: [165269, 200000, 151484, 76440],
+                    backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }]
+            };
+
+            const jobListingsData = {
+                labels: ['Feb 2020', 'May 2020', 'Feb 2021', 'Feb 2022', 'Aug 2022', 'Feb 2025'],
+                datasets: [{
+                    label: '% Change from Feb 2020',
+                    data: [0, -30.25, -1.33, 123.28, 93.37, -33],
+                    fill: false,
+                    borderColor: 'rgb(220, 38, 38)',
+                    tension: 0.1,
+                    pointBackgroundColor: 'rgb(220, 38, 38)',
+                    pointRadius: 4,
+                }]
+            };
+
+            let layoffsChartInstance = null;
+            let jobListingsChartInstance = null;
+
+            const getChartOptions = () => {
+                const isDarkMode = htmlEl.classList.contains('dark');
+                const textColor = isDarkMode ? '#cbd5e1' : '#4b5563'; // gray-300 or gray-600
+                const gridColor = isDarkMode ? 'rgba(107, 114, 128, 0.5)' : 'rgba(209, 213, 219, 0.5)'; // gray-500 or gray-200
+
+                return {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: isDarkMode ? '#374151' : '#111827', // gray-700 or gray-900
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 12 },
+                            titleColor: isDarkMode ? '#f9fafb' : '#ffffff',
+                            bodyColor: isDarkMode ? '#d1d5db' : '#e5e7eb',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textColor }
+                        }
+                    }
+                };
+            };
+
+            const renderCharts = () => {
+                const layoffsCtx = document.getElementById('layoffsChart')?.getContext('2d');
+                if (layoffsCtx) {
+                    if (layoffsChartInstance) layoffsChartInstance.destroy();
+                    layoffsChartInstance = createChart(layoffsCtx, 'bar', layoffData, getChartOptions());
+                }
+
+                const jobListingsCtx = document.getElementById('jobListingsChart')?.getContext('2d');
+                if (jobListingsCtx) {
+                    if (jobListingsChartInstance) jobListingsChartInstance.destroy();
+                    jobListingsChartInstance = createChart(jobListingsCtx, 'line', jobListingsData, getChartOptions());
+                }
+            };
+
+            const updateChartsForTheme = () => {
+                renderCharts(); // Re-render charts with updated options
+            };
+
+            renderCharts(); // Initial render
+
+            const driversContentEl = document.getElementById('driversContent');
+            const driversTabs = document.querySelectorAll('[data-tab]');
+            const driversInfo = {
+                ai: {
+                    title: '🤖 The AI Revolution',
+                    content: `AI is the primary catalyst for change. AI coding assistants (e.g., GitHub Copilot) are automating routine tasks, boosting productivity and enabling smaller teams. This directly contributes to layoffs, as seen with Microsoft attributing 40% of SWE cuts to AI's impact. It's also creating new roles like AI Integration Specialist and Prompt Engineer, while fundamentally shifting demand towards engineers who can manage AI-driven workflows rather than just write code.`
+                },
+                economy: {
+                    title: '📉 Economic Recalibration',
+                    content: `The tech industry is correcting from a period of "hyper-growth" and "overhiring" during 2020-2022, which was fueled by low interest rates and pandemic-driven demand. With rising inflation and investor pressure for profitability, companies have shifted focus from "growth at all costs" to "efficiency over headcount." This new, more conservative operating model is a primary driver of layoffs.`
+                },
+                global: {
+                    title: '🌍 Globalization & Competition',
+                    content: `The market is now fiercely global. Companies are increasingly outsourcing roles to lower-cost regions like Latin America and India to reduce costs. Simultaneously, the flood of highly skilled, laid-off engineers has saturated the domestic market, creating unprecedented competition for roles at all levels. This has shifted negotiating power firmly to employers.`
+                }
+            };
+            
+            const impactContentEl = document.getElementById('impactContent');
+            const impactLevels = document.querySelectorAll('[data-level]');
+            const impactInfo = {
+                senior: {
+                    title: 'Senior Engineers (7+ years)',
+                    content: `Senior engineers are in high demand, with job openings increasing. Their value lies in strategic, high-level skills like system architecture, scalability, and complex problem-solving—areas where AI is not yet proficient. They are being hired to lead teams, oversee AI-augmented projects, and provide the conceptual leadership that drives innovation. The market is clearly prioritizing seasoned expertise.`
+                },
+                entry: {
+                    title: 'Entry-Level Engineers (0-3 years)',
+                    content: `The entry-level market is bifurcated and highly competitive. On one hand, routine tasks are being automated, reducing the need for traditional junior coders. On the other, there's a growing demand for a *new type* of entry-level talent that is AI-literate, capable of testing AI outputs and managing data. The bar has been raised, requiring new graduates to have demonstrable practical and AI-related skills.`
+                },
+                mid: {
+                    title: 'Mid-Career Engineers (Squeezed)',
+                    content: `Mid-career professionals face the greatest pressure. They are caught in a squeeze: AI is automating the tasks below them, and companies are prioritizing highly experienced senior talent above them. Described as "too senior for entry-level jobs but not yet in executive roles," this group is particularly vulnerable to layoffs and must proactively upskill into leadership, architecture, or specialized AI/data domains to avoid redundancy.`
+                }
+            };
+
+            function updateContent(container, data) {
+                 container.innerHTML = `<h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-gray-100">${data.title}</h3><p class="text-gray-600 leading-relaxed dark:text-gray-300">${data.content}</p>`;
+            }
+            
+            driversTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    driversTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    updateContent(driversContentEl, driversInfo[tab.dataset.tab]);
+                });
+            });
+
+            impactLevels.forEach(level => {
+                 level.addEventListener('click', () => {
+                    impactLevels.forEach(l => l.classList.remove('active'));
+                    level.classList.add('active');
+                    updateContent(impactContentEl, impactInfo[level.dataset.level]);
+                });
+            });
+
+            document.querySelectorAll('.skill-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const currentlyActive = document.querySelector('.skill-card.active');
+                    if(currentlyActive && currentlyActive !== card) {
+                        currentlyActive.classList.remove('active');
+                    }
+                    card.classList.toggle('active');
+                });
+            });
+
+            updateContent(driversContentEl, driversInfo.ai);
+            document.querySelector('[data-level="senior"]').classList.add('active');
+            updateContent(impactContentEl, impactInfo.senior);
+
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section[id]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: '-20% 0px -80% 0px', threshold: 0 });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
